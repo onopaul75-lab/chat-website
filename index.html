@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Hacker's Lab | Chat</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #030603;
+      --panel: #071007;
+      --panel2: #0a150a;
+      --green: #00ff66;
+      --green-dark: #123b1d;
+      --text: #d8ffe2;
+      --muted: #6f9177;
+      --border: rgba(0, 255, 102, 0.22);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Courier New", monospace;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(rgba(0,255,102,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,102,.025) 1px, transparent 1px);
+      background-size: 35px 35px;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* HEADER */
+
+    header {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      border-bottom: 1px solid var(--border);
+      background: #020502;
+    }
+
+    .logo {
+      font-weight: bold;
+      letter-spacing: 2px;
+      color: var(--green);
+      text-shadow: 0 0 10px rgba(0,255,102,.6);
+    }
+
+    .logo span {
+      color: white;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .online-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--green);
+      margin-right: 6px;
+    }
+
+    /* MAIN */
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: 280px 1fr 230px;
+      height: calc(100vh - 64px);
+    }
+
+    /* LEFT SIDEBAR */
+
+    .sidebar {
+      border-right: 1px solid var(--border);
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .sidebar-title {
+      padding: 20px;
+      color: var(--green);
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search {
+      margin: 15px;
+      padding: 11px;
+      width: calc(100% - 30px);
+      background: #020502;
+      border: 1px solid var(--border);
+      color: var(--green);
+      outline: none;
+      font-family: inherit;
+    }
+
+    .search:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 10px rgba(0,255,102,.15);
+    }
+
+    .conversation {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      cursor: pointer;
+      border-left: 2px solid transparent;
+    }
+
+    .conversation:hover,
+    .conversation.active {
+      background: rgba(0,255,102,.06);
+      border-left-color: var(--green);
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--green);
+      background: #020602;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .user-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .username {
+      color: #fff;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .last-message {
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* CHAT */
+
+    .chat {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: #040904;
+    }
+
+    .chat-header {
+      height: 70px;
+      padding: 0 22px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    .chat-user {
+      color: white;
+      font-size: 14px;
+    }
+
+    .chat-status {
+      color: var(--green);
+      font-size: 10px;
+      margin-top: 5px;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 25px;
+    }
+
+    .terminal-line {
+      color: #385e40;
+      font-size: 10px;
+      margin: 12px 0 20px;
+    }
+
+    .message {
+      max-width: 70%;
+      margin-bottom: 18px;
+    }
+
+    .message.received {
+      margin-right: auto;
+    }
+
+    .message.sent {
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .message-name {
+      font-size: 10px;
+      color: var(--green);
+      margin-bottom: 5px;
+    }
+
+    .bubble {
+      display: inline-block;
+      padding: 12px 15px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      text-align: left;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .sent .bubble {
+      background: rgba(0,255,102,.08);
+      border-color: rgba(0,255,102,.35);
+    }
+
+    .time {
+      font-size: 9px;
+      color: #48624e;
+      margin-top: 5px;
+    }
+
+    /* MESSAGE INPUT */
+
+    .message-area {
+      padding: 15px;
+      border-top: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    .message-form {
+      display: flex;
+      gap: 10px;
+    }
+
+    #messageInput {
+      flex: 1;
+      padding: 13px;
+      background: #020502;
+      border: 1px solid var(--border);
+      color: var(--green);
+      outline: none;
+      font-family: inherit;
+    }
+
+    #messageInput:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 12px rgba(0,255,102,.12);
+    }
+
+    .send-btn {
+      padding: 0 22px;
+      background: transparent;
+      border: 1px solid var(--green);
+      color: var(--green);
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .send-btn:hover {
+      background: var(--green);
+      color: #020502;
+      box-shadow: 0 0 15px rgba(0,255,102,.5);
+    }
+
+    /* RIGHT PANEL */
+
+    .right-panel {
+      border-left: 1px solid var(--border);
+      background: var(--panel);
+      padding: 20px;
+    }
+
+    .panel-title {
+      color: var(--green);
+      font-size: 12px;
+      margin-bottom: 20px;
+    }
+
+    .profile {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .large-avatar {
+      width: 75px;
+      height: 75px;
+      margin: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--green);
+      color: var(--green);
+      font-size: 24px;
+      box-shadow: 0 0 20px rgba(0,255,102,.15);
+    }
+
+    .profile h3 {
+      color: white;
+      font-size: 14px;
+      margin-top: 12px;
+    }
+
+    .profile p {
+      color: var(--muted);
+      font-size: 10px;
+      margin-top: 6px;
+    }
+
+    .stats {
+      margin-top: 20px;
+    }
+
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 9px 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .stat strong {
+      color: var(--green);
+    }
+
+    /* MOBILE */
+
+    @media (max-width: 900px) {
+      .dashboard {
+        grid-template-columns: 230px 1fr;
+      }
+
+      .right-panel {
+        display: none;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .messages {
+        padding: 15px;
+      }
+
+      .message {
+        max-width: 85%;
+      }
+
+      .header-right .system-text {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">
+    HACKER<span>'S</span> LAB
+  </div>
+
+  <div class="header-right">
+    <span class="system-text">NETWORK: SECURE</span>
+    <span>
+      <span class="online-dot"></span>ONLINE
+    </span>
+  </div>
+</header>
+
+<div class="dashboard">
+
+  <!-- LEFT -->
+  <aside class="sidebar">
+
+    <div class="sidebar-title">
+      // CONVERSATIONS
+    </div>
+
+    <input
+      class="search"
+      id="searchInput"
+      type="text"
+      placeholder="search_users..."
+      onkeyup="searchUsers()"
+    >
+
+    <div id="userList">
+
+      <div class="conversation active" onclick="selectUser('shadow')">
+        <div class="avatar">S</div>
+        <div class="user-info">
+          <div class="username">shadow</div>
+          <div class="last-message">Welcome to the lab...</div>
+        </div>
+      </div>
+
+      <div class="conversation" onclick="selectUser('cyberfox')">
+        <div class="avatar">C</div>
+        <div class="user-info">
+          <div class="username">cyberfox</div>
+          <div class="last-message">See you later.</div>
+        </div>
+      </div>
+
+      <div class="conversation" onclick="selectUser('nightwolf')">
+        <div class="avatar">N</div>
+        <div class="user-info">
+          <div class="username">nightwolf</div>
+          <div class="last-message">New message...</div>
+        </div>
+      </div>
+
+      <div class="conversation" onclick="selectUser('zero')">
+        <div class="avatar">Z</div>
+        <div class="user-info">
+          <div class="username">zero</div>
+          <div class="last-message">What's up?</div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+
+  <!-- CHAT -->
+  <main class="chat">
+
+    <div class="chat-header">
+      <div class="avatar" id="chatAvatar">S</div>
+
+      <div>
+        <div class="chat-user" id="chatUsername">
+          shadow
+        </div>
+
+        <div class="chat-status">
+          ● ONLINE
+        </div>
+      </div>
+    </div>
+
+
+    <div class="messages" id="messages">
+
+      <div class="terminal-line">
+        [SYSTEM] Secure communication channel established.
+      </div>
+
+      <div class="message received">
+        <div class="message-name">shadow</div>
+        <div class="bubble">
+          Hey! Welcome to Hacker's Lab.
+        </div>
+        <div class="time">23:20</div>
+      </div>
+
+      <div class="message received">
+        <div class="message-name">shadow</div>
+        <div class="bubble">
+          This is our new communication network.
+        </div>
+        <div class="time">23:21</div>
+      </div>
+
+      <div class="message sent">
+        <div class="message-name">you</div>
+        <div class="bubble">
+          Nice! The interface looks awesome.
+        </div>
+        <div class="time">23:22</div>
+      </div>
+
+      <div class="message received">
+        <div class="message-name">shadow</div>
+        <div class="bubble">
+          Ready to connect with the lab?
+        </div>
+        <div class="time">23:23</div>
+      </div>
+
+    </div>
+
+
+    <div class="message-area">
+
+      <form class="message-form" onsubmit="sendMessage(event)">
+
+        <input
+          id="messageInput"
+          type="text"
+          autocomplete="off"
+          placeholder="> type_message..."
+        >
+
+        <button class="send-btn" type="submit">
+          SEND
+        </button>
+
+      </form>
+
+    </div>
+
+  </main>
+
+
+  <!-- RIGHT -->
+  <aside class="right-panel">
+
+    <div class="panel-title">
+      // USER PROFILE
+    </div>
+
+    <div class="profile">
+
+      <div class="large-avatar" id="profileAvatar">
+        S
+      </div>
+
+      <h3 id="profileName">shadow</h3>
+
+      <p>
+        <span class="online-dot"></span>
+        currently online
+      </p>
+
+    </div>
+
+    <div class="stats">
+
+      <div class="stat">
+        <span>STATUS</span>
+        <strong>ONLINE</strong>
+      </div>
+
+      <div class="stat">
+        <span>MESSAGES</span>
+        <strong id="messageCount">4</strong>
+      </div>
+
+      <div class="stat">
+        <span>ACCESS</span>
+        <strong>USER</strong>
+      </div>
+
+    </div>
+
+  </aside>
+
+</div>
+
+
+<script>
+
+  let currentUser = "shadow";
+
+  function sendMessage(event) {
+
+    event.preventDefault();
+
+    const input = document.getElementById("messageInput");
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    const messages = document.getElementById("messages");
+
+    const message = document.createElement("div");
+    message.className = "message sent";
+
+    const now = new Date();
+
+    const time = now.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
+    message.innerHTML = `
+      <div class="message-name">you</div>
+      <div class="bubble"></div>
+      <div class="time">${time}</div>
+    `;
+
+    message.querySelector(".bubble").textContent = text;
+
+    messages.appendChild(message);
+
+    input.value = "";
+
+    messages.scrollTop = messages.scrollHeight;
+
+    const count = document.getElementById("messageCount");
+    count.textContent = Number(count.textContent) + 1;
+  }
+
+
+  function selectUser(username) {
+
+    currentUser = username;
+
+    document.getElementById("chatUsername").textContent = username;
+    document.getElementById("profileName").textContent = username;
+
+    const letter = username.charAt(0).toUpperCase();
+
+    document.getElementById("chatAvatar").textContent = letter;
+    document.getElementById("profileAvatar").textContent = letter;
+
+    document.querySelectorAll(".conversation").forEach(item => {
+      item.classList.remove("active");
+    });
+
+    event.currentTarget.classList.add("active");
+
+    document.getElementById("messages").innerHTML = `
+      <div class="terminal-line">
+        [SYSTEM] Connected to ${username}'s secure channel.
+      </div>
+
+      <div class="message received">
+        <div class="message-name">${username}</div>
+        <div class="bubble">
+          Secure channel established.
+        </div>
+        <div class="time">NOW</div>
+      </div>
+    `;
+  }
+
+
+  function searchUsers() {
+
+    const search =
+      document.getElementById("searchInput")
+      .value
+      .toLowerCase();
+
+    const users =
+      document.querySelectorAll(".conversation");
+
+    users.forEach(user => {
+
+      const name =
+        user.querySelector(".username")
+        .textContent
+        .toLowerCase();
+
+      user.style.display =
+        name.includes(search) ? "flex" : "none";
+    });
+  }
+
+</script>
+
+</body>
+</html>
